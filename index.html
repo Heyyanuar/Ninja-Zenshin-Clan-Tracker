@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Ninja Zenshin Clan Ranking Tracker. Pantau pergerakan reputasi clan, kontribusi member, dan aktivitas clan war secara realtime.">
+    <title>Ninja Zenshin - Realtime Clan Ranking Tracker</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Teko:wght@500;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="site-wrapper">
+        <!-- Site Header -->
+        <header class="site-header">
+            <div class="header-overlay">
+                <h1 class="logo-title">NINJA ZENSHIN</h1>
+                <div class="logo-subtitle">CLAN RANKING TRACKER</div>
+            </div>
+            
+            <!-- Server Status & Control Bar -->
+            <div class="server-control-bar">
+                <div class="status-indicator">
+                    <span class="pulse-dot" id="syncStatusDot"></span>
+                    <span class="status-label" id="syncStatusText">LIVE TRACKING</span>
+                </div>
+                
+                <div class="controls-wrapper">
+                    <button id="soundToggleBtn" class="control-btn" title="Toggle Sound">
+                        <span class="icon">🔊</span> <span class="label">Sound On</span>
+                    </button>
+                    <button id="refreshBtn" class="control-btn" title="Refresh Data Now">
+                        <span class="icon">🔄</span> <span class="label">Refresh</span>
+                    </button>
+                    <div class="clock-label">
+                        Last Sync: <span id="lastSyncTime">--:--:--</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Layout -->
+        <main class="main-content">
+            <div class="dashboard-grid">
+                
+                <!-- LEFT COLUMN: Clan Ranking & Countdown -->
+                <div class="dashboard-col main-panel">
+                    <!-- Countdown & Season Info Card -->
+                    <div class="info-card">
+                        <div class="season-title" id="seasonDisplay">Season --</div>
+                        <div class="countdown-container" id="countdownTimer">
+                            <div class="time-block">
+                                <b id="daysVal">--</b>
+                                <span>Days</span>
+                            </div>
+                            <div class="time-block">
+                                <b id="hoursVal">--</b>
+                                <span>Hours</span>
+                            </div>
+                            <div class="time-block">
+                                <b id="minutesVal">--</b>
+                                <span>Mins</span>
+                            </div>
+                            <div class="time-block">
+                                <b id="secondsVal">--</b>
+                                <span>Secs</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Clan Ranking Table Card -->
+                    <div class="table-card">
+                        <div class="card-header">
+                            <h2>Clan Leaderboard</h2>
+                            <div class="search-box">
+                                <input type="text" id="searchInput" placeholder="Cari Clan atau Member...">
+                                <span class="search-icon">🔍</span>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="ranking-table" id="clanRankingTable">
+                                <thead>
+                                    <tr>
+                                        <th class="col-rank">#</th>
+                                        <th class="col-clan">Clan</th>
+                                        <th class="col-master">Master</th>
+                                        <th class="col-members text-center">Members</th>
+                                        <th class="col-rep text-right">Reputation</th>
+                                        <th class="col-activity">Recent Activity (Member Gain)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="clanRankingBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center loading-placeholder">
+                                            <div class="spinner"></div>
+                                            Loading Clan Rankings...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer">
+                            Klik nama clan untuk melihat daftar lengkap member • Reputasi diupdate otomatis setiap 30 detik
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: Realtime Log & Statistics -->
+                <div class="dashboard-col side-panel">
+                    
+                    <!-- Realtime Activity Log Card -->
+                    <div class="log-card">
+                        <div class="card-header">
+                            <h2>Live Activity Feed</h2>
+                            <span class="live-badge">LIVE</span>
+                        </div>
+                        <div class="log-feed" id="liveActivityFeed">
+                            <div class="log-empty">
+                                Menunggu pergerakan reputasi dari server game...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics / Contributors Summary Card -->
+                    <div class="stats-card">
+                        <div class="card-header">
+                            <h2>Session Gain Summary</h2>
+                        </div>
+                        <div class="stats-body" id="sessionSummaryBody">
+                            <div class="log-empty">
+                                Belum ada reputasi yang bertambah di sesi ini.
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="site-footer">
+            <p>&copy; 2026 Ninja Zenshin Tracker • Realtime Analytics Page</p>
+        </footer>
+
+        <!-- Clan Members Modal -->
+        <div class="modal-overlay" id="membersModal" style="display: none;">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <h3 id="modalClanTitle">Clan Name</h3>
+                    <button class="modal-close-btn" id="modalCloseBtn" aria-label="Tutup Modal">&times;</button>
+                </div>
+                <div class="modal-body" id="modalClanBody">
+                    <div class="text-center py-4">
+                        <div class="spinner"></div>
+                        Loading members...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>

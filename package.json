@@ -1,0 +1,13 @@
+{
+  "name": "ninja-zenshin-tracker",
+  "version": "1.0.0",
+  "description": "Real-time Clan Ranking Tracker for Ninja Zenshin",
+  "main": "index.html",
+  "scripts": {
+    "dev": "wrangler pages dev .",
+    "build": "echo 'No build step needed for simple html/js'"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
