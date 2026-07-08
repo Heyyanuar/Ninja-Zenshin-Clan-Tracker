@@ -75,6 +75,100 @@ function playChime() {
   }
 }
 
+// Play dramatic ninja whoosh/slash sound + Speech Synthesis saying "Chaos"
+function playChaosNinjaSound() {
+  if (state.muted) return;
+  
+  // 1. Play synthesized Ninja Sword Slash / Metal Ring Sound
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      const ctx = new AudioContext();
+      const now = ctx.currentTime;
+      
+      // Sword Whoosh: White Noise filtered with downward sweep
+      const bufferSize = ctx.sampleRate * 0.45;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.Q.value = 6;
+      filter.frequency.setValueAtTime(3200, now);
+      filter.frequency.exponentialRampToValueAtTime(120, now + 0.4);
+      
+      const gainNode = ctx.createGain();
+      gainNode.gain.setValueAtTime(0.01, now);
+      gainNode.gain.linearRampToValueAtTime(0.7, now + 0.08); // fast whoosh attack
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4); // decay
+      
+      noise.connect(filter);
+      filter.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      noise.start(now);
+      noise.stop(now + 0.45);
+      
+      // Shuriken Metal strike chime
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const strikeGain = ctx.createGain();
+      
+      osc1.type = "triangle";
+      osc1.frequency.setValueAtTime(880, now); // A5
+      osc1.frequency.exponentialRampToValueAtTime(1320, now + 0.12);
+      
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(1600, now);
+      
+      strikeGain.gain.setValueAtTime(0.35, now);
+      strikeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      
+      osc1.connect(strikeGain);
+      osc2.connect(strikeGain);
+      strikeGain.connect(ctx.destination);
+      
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.35);
+      osc2.stop(now + 0.35);
+    }
+  } catch (e) {
+    console.warn("Ninja Web Audio sound failed:", e);
+  }
+
+  // 2. TTS Voice speaking "Chaos" with deep pitch
+  try {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance("Chaos");
+      utterance.rate = 0.85; // slightly slower for epic voice
+      utterance.pitch = 0.65; // deep chest register sound
+      utterance.volume = 1.0;
+      
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        const targetVoice = voices.find(v => 
+          v.lang.startsWith("en") && 
+          (v.name.includes("Male") || v.name.includes("David") || v.name.includes("Google US English"))
+        );
+        if (targetVoice) utterance.voice = targetVoice;
+      }
+      
+      window.speechSynthesis.speak(utterance);
+    }
+  } catch (e) {
+    console.warn("Speech synthesis voice failed:", e);
+  }
+}
+
 // Format timestamp: HH:MM:SS
 function formatTime(date) {
   const h = String(date.getHours()).padStart(2, '0');
@@ -449,7 +543,7 @@ async function processClanDataChanges() {
             state.sessionGains[clan.name] += gain;
             
             if (!playedSound) {
-              playChime();
+              playChaosNinjaSound();
               playedSound = true;
             }
           }
@@ -1151,7 +1245,7 @@ function setupEventListeners() {
       state.muted = !state.muted;
       localStorage.setItem("nz_muted", state.muted);
       updateSoundButtonUI();
-      if (!state.muted) playChime();
+      if (!state.muted) playChaosNinjaSound();
     });
   }
   
