@@ -3,5 +3,5 @@ compatibility_date = "2026-07-05"
 pages_build_output_dir = "."
 
 [[kv_namespaces]]
-binding = "NINJA_DB"
-id = "xxxx"
+binding = "ninja_zenshin_db"
+id = "05a72806a5a44d22b7e7389a2d05203c"
