@@ -2,19 +2,19 @@
    DESIGN SYSTEM & VARIABLES
    ========================================== */
 :root {
-    --bg-color: #080303;
-    --card-bg: rgba(18, 10, 10, 0.55);
-    --card-border: rgba(255, 255, 255, 0.08);
-    --card-border-hover: rgba(192, 25, 44, 0.4);
-    --header-bg: rgba(10, 4, 4, 0.8);
+    --bg-color: #0b0b0e;
+    --card-bg: rgba(18, 18, 22, 0.65);
+    --card-border: rgba(255, 255, 255, 0.05);
+    --card-border-hover: rgba(192, 25, 44, 0.25);
+    --header-bg: rgba(12, 12, 15, 0.85);
     --text-primary: #ffffff;
-    --text-muted: #a39595;
+    --text-muted: #8e8e93;
     --accent-red: #c0192c;
     --accent-red-bright: #ff384e;
     --accent-gold: #f5c451;
     --accent-gold-hover: #ffe299;
     --accent-green: #5bd17f;
-    --accent-green-bg: rgba(91, 209, 127, 0.12);
+    --accent-green-bg: rgba(91, 209, 127, 0.1);
     
     --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 12px 36px rgba(0, 0, 0, 0.5);
@@ -403,18 +403,22 @@ body {
 .ranking-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.88rem;
+    font-size: 0.83rem;
     text-align: left;
 }
 
 .ranking-table th, .ranking-table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 7px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.ranking-table td {
+    font-variant-numeric: tabular-nums;
 }
 
 .ranking-table th {
-    background-color: rgba(0,0,0,0.2);
-    font-size: 0.75rem;
+    background-color: rgba(0,0,0,0.25);
+    font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--text-muted);
@@ -1479,4 +1483,54 @@ body {
     .filter-actions button {
         flex: 1;
     }
+}
+
+/* ==========================================
+   ACTIVE BADGE & DYNAMIC GAIN STYLES
+   ========================================== */
+.active-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(91, 209, 127, 0.08);
+    border: 1px solid rgba(91, 209, 127, 0.15);
+    color: #5bd17f;
+    border-radius: 12px;
+    padding: 2px 7px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.active-badge.inactive {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+}
+
+.active-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: #5bd17f;
+    margin-right: 5px;
+    display: inline-block;
+}
+
+.active-dot.inactive {
+    background-color: #55555d;
+}
+
+/* Dynamic Gains Formatting */
+.gain-green {
+    color: #5bd17f !important;
+    font-weight: 700;
+}
+
+.gain-gold {
+    color: #f5c451 !important;
+    font-weight: 700;
+}
+
+.gain-zero {
+    color: #55555d !important;
+    font-weight: 500;
 }

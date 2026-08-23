@@ -251,6 +251,15 @@ function getFilteredGainsForMember(clanId, memberName) {
     .reduce((sum, e) => sum + e.gain, 0);
 }
 
+function getActiveMembersCount(clanId) {
+  const cutoff = Date.now() - 24 * 3600000; // active in last 24h
+  const activeMembers = new Set();
+  state.reputationHistory
+    .filter(e => !e.isSystem && e.clanId === clanId && e.timestamp >= cutoff)
+    .forEach(e => activeMembers.add(e.memberName));
+  return activeMembers.size;
+}
+
 // -------------------------------------------------------------
 // Data Sync & API operations
 // -------------------------------------------------------------
@@ -367,10 +376,16 @@ function renderLeaderboard() {
   if (filteredClans.length === 0) {
     body.innerHTML = `
       <tr>
-        <td colspan="${state.filterActive ? 10 : 9}" class="text-center py-4">No clans match your search filter.</td>
+        <td colspan="${state.filterActive ? 11 : 10}" class="text-center py-4">No clans match your search filter.</td>
       </tr>
     `;
     return;
+  }
+
+  function formatGainCell(gain) {
+    if (gain > 1000) return `<td class="text-center gain-green">+${gain.toLocaleString()}</td>`;
+    if (gain > 0) return `<td class="text-center gain-gold">+${gain.toLocaleString()}</td>`;
+    return `<td class="text-center gain-zero">0</td>`;
   }
 
   body.innerHTML = filteredClans.map(clan => {
@@ -381,6 +396,11 @@ function renderLeaderboard() {
     const gain12h = getGainsForClan(clan.id, 12);
     const gain24h = getGainsForClan(clan.id, 24);
     const gainFiltered = getFilteredGainsForClan(clan.id);
+    const activeCount = getActiveMembersCount(clan.id);
+    
+    const activeBadge = activeCount > 0 
+      ? `<span class="active-badge"><i class="active-dot"></i>${activeCount}</span>` 
+      : `<span class="active-badge inactive"><i class="active-dot inactive"></i>0</span>`;
     
     // Get recent activity string
     const recentActivity = state.reputationHistory
@@ -389,9 +409,15 @@ function renderLeaderboard() {
       .map(e => `${escapeHtml(e.memberName)} (+${e.gain})`)
       .join(", ") || "--";
       
-    const filteredCol = state.filterActive ? `
-      <td class="text-center font-weight-bold color-gold">+${gainFiltered.toLocaleString()}</td>
-    ` : "";
+    const filteredCol = state.filterActive 
+      ? (gainFiltered > 1000 
+          ? `<td class="text-center font-weight-bold gain-green">+${gainFiltered.toLocaleString()}</td>`
+          : (gainFiltered > 0 
+              ? `<td class="text-center font-weight-bold gain-gold">+${gainFiltered.toLocaleString()}</td>`
+              : `<td class="text-center font-weight-bold gain-zero">0</td>`
+            )
+        )
+      : "";
 
     return `
       <tr class="${isBleeding ? 'row-bleeding' : ''}">
@@ -403,10 +429,11 @@ function renderLeaderboard() {
         </td>
         <td class="col-master">${escapeHtml(clan.master)}</td>
         <td class="col-members text-center">${clan.members}</td>
+        <td class="text-center">${activeBadge}</td>
         <td class="col-rep text-right">${clan.reputation.toLocaleString()}</td>
-        <td class="text-center">+${gain6h.toLocaleString()}</td>
-        <td class="text-center">+${gain12h.toLocaleString()}</td>
-        <td class="text-center">+${gain24h.toLocaleString()}</td>
+        ${formatGainCell(gain6h)}
+        ${formatGainCell(gain12h)}
+        ${formatGainCell(gain24h)}
         ${filteredCol}
         <td class="col-activity text-muted">${recentActivity}</td>
       </tr>
