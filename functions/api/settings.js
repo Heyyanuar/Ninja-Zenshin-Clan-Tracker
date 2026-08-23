@@ -1,4 +1,4 @@
-// Initialize global state fallback for local development (no KV namespace bound)
+// Initialize global state fallback for local development (no D1 database bound)
 if (!globalThis.globalNinjaState) {
   globalThis.globalNinjaState = {
     reputationHistory: [],
@@ -28,7 +28,7 @@ export async function onRequest(context) {
   }
 
   try {
-    const db = context.env.NINJA_DB;
+    const db = context.env.NINJA_D1;
     const body = await context.request.json();
     
     // Read current settings and stamina
@@ -36,12 +36,58 @@ export async function onRequest(context) {
     let staminaData = {};
     let bleedingClans = {};
     let reputationHistory = [];
+    const newEvents = [];
 
     if (db) {
-      settings = JSON.parse(await db.get("settings") || '{"defendingTargetRank":1,"attackPartySize":"solo","lastRecoveryTime":0}');
-      staminaData = JSON.parse(await db.get("stamina_data") || "{}");
-      bleedingClans = JSON.parse(await db.get("bleeding_clans") || "{}");
-      reputationHistory = JSON.parse(await db.get("reputation_history") || "[]");
+      // Auto initialize tables if not exist
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
+        CREATE TABLE IF NOT EXISTS stamina (clan_id INTEGER, member_name TEXT, stamina INTEGER, PRIMARY KEY (clan_id, member_name));
+        CREATE TABLE IF NOT EXISTS reputation_history (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp INTEGER, clan_id INTEGER, clan_name TEXT, member_name TEXT, gain INTEGER, is_system INTEGER, message TEXT, important INTEGER);
+        CREATE TABLE IF NOT EXISTS bleeding_clans (clan_id INTEGER PRIMARY KEY, is_bleeding INTEGER);
+      `);
+
+      // Load Settings
+      const settingsRows = await db.prepare("SELECT key, value FROM settings").all();
+      if (settingsRows && settingsRows.results) {
+        settingsRows.results.forEach(r => {
+          if (r.key === "defendingTargetRank") settings.defendingTargetRank = parseInt(r.value, 10);
+          if (r.key === "attackPartySize") settings.attackPartySize = r.value;
+          if (r.key === "lastRecoveryTime") settings.lastRecoveryTime = parseInt(r.value, 10);
+        });
+      }
+
+      // Load Reputation History
+      const repRows = await db.prepare("SELECT timestamp, clan_id, clan_name, member_name, gain, is_system, message, important FROM reputation_history ORDER BY id DESC LIMIT 500").all();
+      if (repRows && repRows.results) {
+        reputationHistory = repRows.results.map(r => ({
+          timestamp: r.timestamp,
+          clanId: r.clan_id,
+          clanName: r.clan_name,
+          memberName: r.member_name,
+          gain: r.gain,
+          isSystem: r.is_system === 1,
+          message: r.message,
+          important: r.important === 1
+        }));
+      }
+
+      // Load Stamina Data
+      const stamRows = await db.prepare("SELECT clan_id, member_name, stamina FROM stamina").all();
+      if (stamRows && stamRows.results) {
+        stamRows.results.forEach(r => {
+          if (!staminaData[r.clan_id]) staminaData[r.clan_id] = {};
+          staminaData[r.clan_id][r.member_name] = r.stamina;
+        });
+      }
+
+      // Load Bleeding Clans
+      const bleedRows = await db.prepare("SELECT clan_id, is_bleeding FROM bleeding_clans").all();
+      if (bleedRows && bleedRows.results) {
+        bleedRows.results.forEach(r => {
+          bleedingClans[r.clan_id] = r.is_bleeding === 1;
+        });
+      }
     } else {
       settings = globalState.settings;
       staminaData = globalState.staminaData;
@@ -57,12 +103,14 @@ export async function onRequest(context) {
         settings.attackPartySize = body.attackPartySize;
       }
       
-      reputationHistory.unshift({
+      const configEv = {
         timestamp: Date.now(),
         isSystem: true,
         important: false,
         message: `[Config Update] Settings updated: Defending Target = Rank ${settings.defendingTargetRank}, Party Size = ${settings.attackPartySize}`
-      });
+      };
+      newEvents.push(configEv);
+      reputationHistory.unshift(configEv);
     } 
     else if (body.action === "resetClan") {
       const clanId = body.clanId;
@@ -74,12 +122,14 @@ export async function onRequest(context) {
         });
         bleedingClans[clanId] = false;
         
-        reputationHistory.unshift({
+        const resetEv = {
           timestamp: Date.now(),
           isSystem: true,
           important: true,
           message: `[Manual Reset] **${clanName}** members reset to 200 Stamina (Bleeding cleared).`
-        });
+        };
+        newEvents.push(resetEv);
+        reputationHistory.unshift(resetEv);
       }
     }
     else if (body.action === "overrideMember") {
@@ -91,12 +141,14 @@ export async function onRequest(context) {
         if (!staminaData[clanId]) staminaData[clanId] = {};
         staminaData[clanId][memberName] = newStamina;
         
-        reputationHistory.unshift({
+        const overrideEv = {
           timestamp: Date.now(),
           isSystem: true,
           important: false,
           message: `[Manual Override] **${memberName}** stamina set to ${newStamina}.`
-        });
+        };
+        newEvents.push(overrideEv);
+        reputationHistory.unshift(overrideEv);
         
         // Re-evaluate bleeding status for the clan
         const membersList = Object.keys(staminaData[clanId]);
@@ -108,12 +160,14 @@ export async function onRequest(context) {
         if (membersList.length > 0 && (lowStaminaCount / membersList.length) >= 0.50) {
           bleedingClans[clanId] = true;
           
-          reputationHistory.unshift({
+          const bleedEv = {
             timestamp: Date.now(),
             isSystem: true,
             important: true,
             message: `[Bleeding State] **${body.clanName || ('Clan #' + clanId)}** has entered Bleeding State! Stamina drain protection is now active.`
-          });
+          };
+          newEvents.push(bleedEv);
+          reputationHistory.unshift(bleedEv);
         } else {
           // If bleeding, exit only when all members are exactly 200
           if (bleedingClans[clanId] === true) {
@@ -121,12 +175,14 @@ export async function onRequest(context) {
             if (allFullyRecovered) {
               bleedingClans[clanId] = false;
               
-              reputationHistory.unshift({
+              const bleedExitEv = {
                 timestamp: Date.now(),
                 isSystem: true,
                 important: true,
                 message: `[Bleeding Cleared] **${body.clanName || ('Clan #' + clanId)}** has fully recovered to 200/200 stamina. Bleeding state is cleared!`
-              });
+              };
+              newEvents.push(bleedExitEv);
+              reputationHistory.unshift(bleedExitEv);
             }
           }
         }
@@ -134,10 +190,49 @@ export async function onRequest(context) {
     }
 
     if (db) {
-      await db.put("settings", JSON.stringify(settings));
-      await db.put("stamina_data", JSON.stringify(staminaData));
-      await db.put("bleeding_clans", JSON.stringify(bleedingClans));
-      await db.put("reputation_history", JSON.stringify(reputationHistory));
+      // A. Save Settings
+      await db.batch([
+        db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('defendingTargetRank', ?)").bind(settings.defendingTargetRank.toString()),
+        db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('attackPartySize', ?)").bind(settings.attackPartySize),
+        db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('lastRecoveryTime', ?)").bind(settings.lastRecoveryTime.toString())
+      ]);
+
+      // B. Save Stamina data in chunks
+      const staminaStatements = [];
+      for (const clanId of Object.keys(staminaData)) {
+        for (const name of Object.keys(staminaData[clanId])) {
+          staminaStatements.push(
+            db.prepare("INSERT OR REPLACE INTO stamina (clan_id, member_name, stamina) VALUES (?, ?, ?)")
+              .bind(parseInt(clanId, 10), name, staminaData[clanId][name])
+          );
+        }
+      }
+      if (staminaStatements.length > 0) {
+        for (let i = 0; i < staminaStatements.length; i += 100) {
+          await db.batch(staminaStatements.slice(i, i + 100));
+        }
+      }
+
+      // C. Save Bleeding Clans
+      const bleedingStatements = [];
+      for (const clanId of Object.keys(bleedingClans)) {
+        bleedingStatements.push(
+          db.prepare("INSERT OR REPLACE INTO bleeding_clans (clan_id, is_bleeding) VALUES (?, ?)")
+            .bind(parseInt(clanId, 10), bleedingClans[clanId] ? 1 : 0)
+        );
+      }
+      if (bleedingStatements.length > 0) {
+        await db.batch(bleedingStatements);
+      }
+
+      // D. Save new reputation events
+      if (newEvents.length > 0) {
+        const eventStatements = newEvents.map(e => 
+          db.prepare("INSERT INTO reputation_history (timestamp, clan_id, clan_name, member_name, gain, is_system, message, important) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(e.timestamp, e.clanId || null, e.clanName || null, e.memberName || null, e.gain || 0, e.isSystem ? 1 : 0, e.message || null, e.important ? 1 : 0)
+        );
+        await db.batch(eventStatements);
+      }
     } else {
       globalState.settings = settings;
       globalState.staminaData = staminaData;
@@ -149,7 +244,11 @@ export async function onRequest(context) {
       status: 200,
       headers: corsHeaders
     });
+
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: corsHeaders
+    });
   }
 }

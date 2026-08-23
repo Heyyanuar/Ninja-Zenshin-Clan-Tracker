@@ -1,4 +1,4 @@
-// Initialize global state fallback for local development (no KV namespace bound)
+// Initialize global state fallback for local development (no D1 database bound)
 if (!globalThis.globalNinjaState) {
   globalThis.globalNinjaState = {
     reputationHistory: [],
@@ -32,11 +32,17 @@ export async function onRequest(context) {
   }
 
   try {
-    const db = context.env.NINJA_DB;
+    const db = context.env.NINJA_D1;
     let cachedMembers = null;
 
     if (db) {
-      cachedMembers = JSON.parse(await db.get(`members_cache_${clanId}`) || "null");
+      // Auto initialize tables if not exist
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS members_cache (clan_id INTEGER PRIMARY KEY, members_json TEXT);
+      `);
+      
+      const row = await db.prepare("SELECT members_json FROM members_cache WHERE clan_id = ?").bind(clanId).first();
+      cachedMembers = row ? JSON.parse(row.members_json) : null;
     } else {
       cachedMembers = globalState.membersCache[clanId] || null;
     }
@@ -82,7 +88,7 @@ export async function onRequest(context) {
       });
 
       if (db) {
-        await db.put(`members_cache_${clanId}`, JSON.stringify(newCache));
+        await db.prepare("INSERT OR REPLACE INTO members_cache (clan_id, members_json) VALUES (?, ?)").bind(clanId, JSON.stringify(newCache)).run();
       } else {
         globalState.membersCache[clanId] = newCache;
       }
