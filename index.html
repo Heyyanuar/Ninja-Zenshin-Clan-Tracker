@@ -48,210 +48,232 @@
 
         <!-- Main Dashboard Layout -->
         <main class="main-content">
-            <div class="dashboard-grid">
-                
-                <!-- LEFT COLUMN: Clan Ranking & Countdown -->
-                <div class="dashboard-col main-panel">
-                    <!-- Countdown & Season Info Card -->
-                    <div class="info-card">
-                        <div class="season-title" id="seasonDisplay">Season --</div>
-                        <div class="countdown-container" id="countdownTimer">
-                            <div class="time-block">
-                                <b id="daysVal">--</b>
-                                <span>Days</span>
-                            </div>
-                            <div class="time-block">
-                                <b id="hoursVal">--</b>
-                                <span>Hours</span>
-                            </div>
-                            <div class="time-block">
-                                <b id="minutesVal">--</b>
-                                <span>Mins</span>
-                            </div>
-                            <div class="time-block">
-                                <b id="secondsVal">--</b>
-                                <span>Secs</span>
-                            </div>
+            <!-- TOP CARD: Countdown & Filter Bar -->
+            <div class="top-row-grid">
+                <!-- Countdown & Season Info Card -->
+                <div class="info-card">
+                    <div class="season-title" id="seasonDisplay">Season --</div>
+                    <div class="countdown-container" id="countdownTimer">
+                        <div class="time-block">
+                            <b id="daysVal">--</b>
+                            <span>Days</span>
                         </div>
-                    </div>
-
-                    <!-- Simulation & Stamina Settings Card -->
-                    <div class="settings-card">
-                        <div class="card-header" id="settingsToggleHeader" style="cursor: pointer;">
-                            <h2>⚙️ Simulation & Stamina Settings</h2>
-                            <span id="settingsToggleIcon">▼ Toggle Settings</span>
+                        <div class="time-block">
+                            <b id="hoursVal">--</b>
+                            <span>Hours</span>
                         </div>
-                        <div class="settings-body" id="settingsCollapseBody" style="display: none;">
-                            <div class="settings-grid">
-                                <!-- Group 1: Attack Rules -->
-                                <div class="settings-group">
-                                    <h3>Attack Configuration</h3>
-                                    <div class="setting-item">
-                                        <label for="defendingTargetSelect">Defending Target Clan:</label>
-                                        <select id="defendingTargetSelect">
-                                            <option value="1" selected>Rank 1 (Highest Reputation)</option>
-                                            <option value="2">Rank 2</option>
-                                            <option value="3">Rank 3</option>
-                                        </select>
-                                    </div>
-                                    <div class="setting-item">
-                                        <label for="pollIntervalSelect">Polling Update Speed:</label>
-                                        <select id="pollIntervalSelect">
-                                            <option value="5000">5 Seconds (Very Fast / Aggressive)</option>
-                                            <option value="10000">10 Seconds (Fast)</option>
-                                            <option value="30000" selected>30 Seconds (Normal - Recommended)</option>
-                                            <option value="60000">60 Seconds (Safe / Background)</option>
-                                        </select>
-                                    </div>
-                                    <div class="setting-item">
-                                        <label>Assumed Party Size (Defending Stamina Drain):</label>
-                                        <div class="radio-group">
-                                            <label><input type="radio" name="attackType" value="solo" checked> Solo (Drains 1 defender)</label>
-                                            <label><input type="radio" name="attackType" value="party1"> 1 Party Member (Drains 2 defenders)</label>
-                                            <label><input type="radio" name="attackType" value="party2"> 2 Party Members (Drains 3 defenders)</label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Group 2: Stamina Operations -->
-                                <div class="settings-group">
-                                    <h3>Manual Stamina Override</h3>
-                                    <div class="settings-row">
-                                        <div class="setting-item">
-                                            <label for="opsClanSelect">Select Clan:</label>
-                                            <select id="opsClanSelect">
-                                                <option value="">-- Choose Clan --</option>
-                                            </select>
-                                        </div>
-                                        <div class="setting-item-btn">
-                                            <button id="resetClanStaminaBtn" class="control-btn red-border-btn">Reset Clan to 200</button>
-                                        </div>
-                                    </div>
-                                    <div class="settings-row" style="margin-top: 10px;">
-                                        <div class="setting-item">
-                                            <label for="opsMemberSelect">Select Member:</label>
-                                            <select id="opsMemberSelect" disabled>
-                                                <option value="">-- Select Member --</option>
-                                            </select>
-                                        </div>
-                                        <div class="setting-item-inline" style="display: flex; gap: 8px; align-items: flex-end;">
-                                            <div style="flex-grow: 1;">
-                                                <label for="manualStaminaInput">Stamina:</label>
-                                                <input type="number" id="manualStaminaInput" min="50" max="200" value="200" disabled style="width: 70px; height: 32px; text-align: center;">
-                                            </div>
-                                            <button id="saveMemberStaminaBtn" class="control-btn" disabled style="height: 32px; padding: 0 12px;">Apply</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="time-block">
+                            <b id="minutesVal">--</b>
+                            <span>Mins</span>
                         </div>
-                    </div>
-
-                    <!-- Main Clan Ranking Table Card -->
-                    <div class="table-card">
-                        <div class="card-header">
-                            <h2>Clan Leaderboard</h2>
-                            <div class="search-box">
-                                <input type="text" id="searchInput" placeholder="Search Clan or Member...">
-                                <span class="search-icon">🔍</span>
-                            </div>
-                        </div>
-
-                        <div class="table-responsive">
-                            <table class="ranking-table" id="clanRankingTable">
-                                <thead>
-                                    <tr>
-                                        <th class="col-rank">#</th>
-                                        <th class="col-clan">Clan</th>
-                                        <th class="col-master">Master</th>
-                                        <th class="col-members text-center">Members</th>
-                                        <th class="col-rep text-right">Reputation</th>
-                                        <th class="col-activity">Recent Activity (Member Gain)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="clanRankingBody">
-                                    <tr>
-                                        <td colspan="6" class="text-center loading-placeholder">
-                                            <div class="spinner"></div>
-                                            Loading Clan Rankings...
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="card-footer">
-                            Click a clan name to view full member list • Reputation updates automatically every 30 seconds
+                        <div class="time-block">
+                            <b id="secondsVal">--</b>
+                            <span>Secs</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- RIGHT COLUMN: Realtime Log & Statistics -->
-                <div class="dashboard-col side-panel">
-                    
-                    <!-- Bleeding Status Widget Card -->
-                    <div class="log-card bleed-tracker-card">
-                        <div class="card-header">
-                            <h2>🩸 Bleeding Status Tracker</h2>
-                            <span class="live-badge" id="bleedingActiveCount" style="background-color: var(--accent-gold); color: #000;">0 BLEEDING</span>
-                        </div>
-                        <div class="bleed-widget-body" id="bleedingWidgetBody">
-                            <div class="log-empty">
-                                All clans have healthy stamina levels.
+                <!-- Custom Time Range Filter Bar -->
+                <div class="filter-card">
+                    <div class="card-header">
+                        <h2>🕒 Server Time Range Filter</h2>
+                    </div>
+                    <div class="filter-body">
+                        <div class="filter-inputs">
+                            <div class="filter-input-group">
+                                <label for="filterStartTime">Start SGT:</label>
+                                <input type="time" id="filterStartTime" value="10:00">
+                            </div>
+                            <div class="filter-input-group">
+                                <label for="filterEndTime">End SGT:</label>
+                                <input type="time" id="filterEndTime" value="15:00">
                             </div>
                         </div>
+                        <div class="filter-actions">
+                            <button id="applyFilterBtn" class="control-btn gold-border-btn">Apply Filter</button>
+                            <button id="clearFilterBtn" class="control-btn red-border-btn" style="display: none;">Clear</button>
+                        </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Daily Active Members Widget Card -->
-                    <div class="log-card daily-active-card">
-                        <div class="card-header flex-column-mobile">
-                            <h2>🔥 Daily Active Members</h2>
-                            <div class="reset-timer" id="dailyResetTimer" title="Time remaining until daily reset (23:00 WIB)">
-                                Reset: --:--:--
-                            </div>
-                        </div>
-                        <div class="tab-switcher">
-                            <button class="tab-btn active" id="tabDailyToday" data-tab="today">Today</button>
-                            <button class="tab-btn" id="tabDailyYesterday" data-tab="yesterday">Yesterday</button>
-                        </div>
-                        <div class="daily-widget-body" id="dailyActiveWidgetBody">
-                            <div class="log-empty">
-                                No active member contributions recorded today.
-                            </div>
-                        </div>
+            <!-- Main Clan Ranking Table Card -->
+            <div class="table-card full-width-card">
+                <div class="card-header">
+                    <h2>Clan Leaderboard</h2>
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search Clan or Member...">
+                        <span class="search-icon">🔍</span>
                     </div>
+                </div>
 
-                    <!-- Realtime Activity Log Card -->
-                    <div class="log-card">
-                        <div class="card-header">
-                            <h2>Live Activity Feed</h2>
-                            <span class="live-badge">LIVE</span>
-                        </div>
-                        <div class="log-feed" id="liveActivityFeed">
-                            <div class="log-empty">
-                                Waiting for reputation changes from the game server...
-                            </div>
-                        </div>
-                    </div>
+                <div class="table-responsive">
+                    <table class="ranking-table" id="clanRankingTable">
+                        <thead>
+                            <tr>
+                                <th class="col-rank">#</th>
+                                <th class="col-clan">Clan</th>
+                                <th class="col-master">Master</th>
+                                <th class="col-members text-center">Members</th>
+                                <th class="col-rep text-right">Reputation</th>
+                                <th class="col-gain text-center">6h Gain</th>
+                                <th class="col-gain text-center">12h Gain</th>
+                                <th class="col-gain text-center">24h Gain</th>
+                                <th class="col-gain text-center filtered-gain-header" style="display: none;">Filtered Gain</th>
+                                <th class="col-activity">Recent Activity (Member Gain)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clanRankingBody">
+                            <tr>
+                                <td colspan="10" class="text-center loading-placeholder">
+                                    <div class="spinner"></div>
+                                    Loading Clan Rankings...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer">
+                    Click a clan name to view full member list & hourly gains • Reputation updates automatically
+                </div>
+            </div>
 
-                    <!-- Statistics / Contributors Summary Card -->
-                    <div class="stats-card">
-                        <div class="card-header">
-                            <h2>Session Gain Summary</h2>
+            <!-- BOTTOM WIDGET GRID -->
+            <div class="bottom-widgets-grid">
+                <!-- Bleeding Status Widget Card -->
+                <div class="log-card bleed-tracker-card">
+                    <div class="card-header">
+                        <h2>🩸 Bleeding Status Tracker</h2>
+                        <span class="live-badge" id="bleedingActiveCount" style="background-color: var(--accent-gold); color: #000;">0 BLEEDING</span>
+                    </div>
+                    <div class="bleed-widget-body" id="bleedingWidgetBody">
+                        <div class="log-empty">
+                            All clans have healthy stamina levels.
                         </div>
-                        <div class="stats-body" id="sessionSummaryBody">
-                            <div class="log-empty">
-                                No reputation has increased in this session yet.
+                    </div>
+                </div>
+
+                <!-- Daily Active Members Widget Card -->
+                <div class="log-card daily-active-card">
+                    <div class="card-header flex-column-mobile">
+                        <h2>🔥 Daily Active Members</h2>
+                        <div class="reset-timer" id="dailyResetTimer" title="Time remaining until daily reset (23:00 WIB)">
+                            Reset: --:--:--
+                        </div>
+                    </div>
+                    <div class="tab-switcher">
+                        <button class="tab-btn active" id="tabDailyToday" data-tab="today">Today</button>
+                        <button class="tab-btn" id="tabDailyYesterday" data-tab="yesterday">Yesterday</button>
+                    </div>
+                    <div class="daily-widget-body" id="dailyActiveWidgetBody">
+                        <div class="log-empty">
+                            No active member contributions recorded today.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Realtime Activity Log Card -->
+                <div class="log-card">
+                    <div class="card-header">
+                        <h2>Live Activity Feed</h2>
+                        <span class="live-badge">LIVE</span>
+                    </div>
+                    <div class="log-feed" id="liveActivityFeed">
+                        <div class="log-empty">
+                            Waiting for reputation changes from the game server...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics / Session Summary Card -->
+                <div class="stats-card">
+                    <div class="card-header">
+                        <h2>Session Gain Summary</h2>
+                    </div>
+                    <div class="stats-body" id="sessionSummaryBody">
+                        <div class="log-empty">
+                            No reputation has increased in this session yet.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulation & Stamina Settings Card -->
+            <div class="settings-card bottom-settings-card">
+                <div class="card-header" id="settingsToggleHeader" style="cursor: pointer;">
+                    <h2>⚙️ Simulation & Stamina Settings</h2>
+                    <span id="settingsToggleIcon">▼ Toggle Settings</span>
+                </div>
+                <div class="settings-body" id="settingsCollapseBody" style="display: none;">
+                    <div class="settings-grid">
+                        <!-- Group 1: Attack Rules -->
+                        <div class="settings-group">
+                            <h3>Attack Configuration</h3>
+                            <div class="setting-item">
+                                <label for="defendingTargetSelect">Defending Target Clan:</label>
+                                <select id="defendingTargetSelect">
+                                    <option value="1" selected>Rank 1 (Highest Reputation)</option>
+                                    <option value="2">Rank 2</option>
+                                    <option value="3">Rank 3</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label for="pollIntervalSelect">Polling Update Speed:</label>
+                                <select id="pollIntervalSelect">
+                                    <option value="5000">5 Seconds (Very Fast / Aggressive)</option>
+                                    <option value="10000">10 Seconds (Fast)</option>
+                                    <option value="30000" selected>30 Seconds (Normal - Recommended)</option>
+                                    <option value="60000">60 Seconds (Safe / Background)</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label>Assumed Party Size (Defending Stamina Drain):</label>
+                                <div class="radio-group">
+                                    <label><input type="radio" name="attackType" value="solo" checked> Solo (Drains 1 defender)</label>
+                                    <label><input type="radio" name="attackType" value="party1"> 1 Party Member (Drains 2 defenders)</label>
+                                    <label><input type="radio" name="attackType" value="party2"> 2 Party Members (Drains 3 defenders)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Group 2: Stamina Operations -->
+                        <div class="settings-group">
+                            <h3>Manual Stamina Override</h3>
+                            <div class="settings-row">
+                                <div class="setting-item">
+                                    <label for="opsClanSelect">Select Clan:</label>
+                                    <select id="opsClanSelect">
+                                        <option value="">-- Choose Clan --</option>
+                                    </select>
+                                </div>
+                                <div class="setting-item-btn">
+                                    <button id="resetClanStaminaBtn" class="control-btn red-border-btn">Reset Clan to 200</button>
+                                </div>
+                            </div>
+                            <div class="settings-row" style="margin-top: 10px;">
+                                <div class="setting-item">
+                                    <label for="opsMemberSelect">Select Member:</label>
+                                    <select id="opsMemberSelect" disabled>
+                                        <option value="">-- Select Member --</option>
+                                    </select>
+                                </div>
+                                <div class="setting-item-inline" style="display: flex; gap: 8px; align-items: flex-end;">
+                                    <div style="flex-grow: 1;">
+                                        <label for="manualStaminaInput">Stamina:</label>
+                                        <input type="number" id="manualStaminaInput" min="50" max="200" value="200" disabled style="width: 70px; height: 32px; text-align: center;">
+                                    </div>
+                                    <button id="saveMemberStaminaBtn" class="control-btn" disabled style="height: 32px; padding: 0 12px;">Apply</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    
                 </div>
             </div>
         </main>
 
         <!-- Footer -->
         <footer class="site-footer">
-            <p>&copy; 2026 Ninja Zenshin Tracker • Realtime Analytics Page</p>
+            <p>&copy; 2026 Ninja Zenshin Tracker • Shared KV Analytics Page</p>
         </footer>
 
         <!-- Clan Members Modal -->
