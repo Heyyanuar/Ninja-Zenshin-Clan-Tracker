@@ -1,3 +1,16 @@
+// Initialize global state fallback for local development (no KV namespace bound)
+if (!globalThis.globalNinjaState) {
+  globalThis.globalNinjaState = {
+    reputationHistory: [],
+    staminaData: {},
+    bleedingClans: {},
+    settings: { defendingTargetRank: 1, attackPartySize: "solo", lastRecoveryTime: Date.now() },
+    lastLeaderboard: { clans: [] },
+    membersCache: {}
+  };
+}
+const globalState = globalThis.globalNinjaState;
+
 export async function onRequest(context) {
   const url = new URL(context.request.url);
   const clanId = url.searchParams.get("clanId");
@@ -7,31 +20,44 @@ export async function onRequest(context) {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "public, max-age=15" // cache for 15 seconds to ease load
+    "Cache-Control": "public, max-age=3"
   };
 
   if (context.request.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders
-    });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   if (!clanId) {
-    return new Response(JSON.stringify({ error: "Missing clanId parameter" }), {
-      status: 400,
-      headers: corsHeaders
-    });
+    return new Response(JSON.stringify({ error: "Missing clanId parameter" }), { status: 400, headers: corsHeaders });
   }
 
-  const targetUrl = `https://ninjazenshin.online/clan-ranking/members/${clanId}`;
-
   try {
+    const db = context.env.NINJA_DB;
+    let cachedMembers = null;
+
+    if (db) {
+      cachedMembers = JSON.parse(await db.get(`members_cache_${clanId}`) || "null");
+    } else {
+      cachedMembers = globalState.membersCache[clanId] || null;
+    }
+
+    // If we have cached member structures, format it as { members: [...] }
+    if (cachedMembers) {
+      const memberList = Object.entries(cachedMembers).map(([name, data]) => ({
+        name,
+        rep: typeof data === 'object' ? data.rep : data,
+        level: typeof data === 'object' ? data.level : "--",
+        class: typeof data === 'object' ? data.class : "--"
+      }));
+      return new Response(JSON.stringify({ members: memberList }), { status: 200, headers: corsHeaders });
+    }
+
+    // Scrape from game server as fallback
+    const targetUrl = `https://ninjazenshin.online/clan-ranking/members/${clanId}`;
     const response = await fetch(targetUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json",
-        "Accept-Language": "en-US,en;q=0.5"
+        "Accept": "application/json"
       }
     });
 
@@ -43,15 +69,28 @@ export async function onRequest(context) {
     }
 
     const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: corsHeaders
-    });
+
+    // Cache it
+    if (data && data.members) {
+      const newCache = {};
+      data.members.forEach(m => {
+        newCache[m.name] = {
+          rep: m.rep || 0,
+          level: m.level || "--",
+          class: m.class || "--"
+        };
+      });
+
+      if (db) {
+        await db.put(`members_cache_${clanId}`, JSON.stringify(newCache));
+      } else {
+        globalState.membersCache[clanId] = newCache;
+      }
+    }
+
+    return new Response(JSON.stringify(data), { status: 200, headers: corsHeaders });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: corsHeaders
-    });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
   }
 }
